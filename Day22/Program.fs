@@ -53,13 +53,25 @@ let part1 (grid: Set<Coords>) (pos: Coords) (n: int) : int =
         if not infected then incr count
     !count
 
-let read1 (input: String array) : Set<Coords> =
+let part1a (grid: HashSet<Coords>) (pos: Coords) (n: int) : int =
+    let count = ref 0
+    let pos = ref pos
+    let wind = ref North
+    for _ in 1..n do
+        let infected = grid.Remove !pos
+        if not infected then
+            incr count
+            grid.Add !pos |> ignore
+        wind := turn !wind (if infected then Right else Left)
+        pos := go !pos !wind
+    !count
+
+let read1 (input: String array) =
     seq { 0 .. Array.length input - 1 }
     |> Seq.collect (fun y ->
         let s = input.[y]
         seq { 0 .. s.Length - 1 }
         |> Seq.choose (fun x -> if s.[x] = '#' then Some ((x, y)) else None))
-    |> set
 
 let read2_immutable (input: String array) : Map<Coords, Infection> =
     seq { 0 .. Array.length input - 1 }
@@ -183,10 +195,16 @@ let main argv =
         "t10k", test_input, (1, 1), 10_000
         "part1", challenge_input, (12, 12), 10_000
     |]
+    
     fun () ->
         for label, input, pos, n in part1s do
-            part1 (read1 input) pos n |> printfn "%-8s : %d" label
+            part1 (read1 input |> set) pos n |> printfn "%-8s : %d" label
     |> timed "Part 1"
+    
+    fun () ->
+        for label, input, pos, n in part1s do
+            part1a (read1 input |> HashSet) pos n |> printfn "%-8s : %d" label
+    |> timed "Part 1a"
 
     let part2s = [|
         "t8", test_input, (1, 1), 8
