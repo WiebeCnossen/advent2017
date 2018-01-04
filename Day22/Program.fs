@@ -23,8 +23,8 @@ let orient (infection: Option<Infection>) : Turn =
     match infection with
     | None -> Left
     | Some(Weakened) -> Straight
-    | Some(Flagged) -> Back
     | Some(Infected) -> Right
+    | Some(Flagged) -> Back
 
 let touch (infection: Option<Infection>) : Option<Infection> =
     match infection with
@@ -150,6 +150,49 @@ let part2_2darray (grid: Infection option [,]) (pos: Coords) (n: int) : int =
         pos := go !pos !wind
     !count
 
+let north = 0
+let west = 1
+let south = 2
+let east = 3
+let winds = [| North; West; South; East |]
+
+let straight = 0
+let left = 1
+let back = 2
+let right = 3
+let turns = [| left; straight; right; back |]
+
+let add wind turn = (wind + turn) % 4
+
+let clean = 0
+let weakened = 1
+let infected = 2
+let flagged = 3
+
+let read2_2dints (input: String array) : int [,] =
+    let result = Array2D.create 2000 2000 clean
+    seq { 0 .. Array.length input - 1 }
+    |> Seq.collect (fun y ->
+        let s = input.[y]
+        seq { 0 .. s.Length - 1 }
+        |> Seq.choose (fun x -> if s.[x] = '#' then Some ((1000 + x, 1000 + y)) else None))
+    |> Seq.iter (fun ((x, y)) -> result.[x, y] <- infected)
+    result
+
+let part2_2dints (grid: int [,]) (pos: Coords) (n: int) : int =
+    let pos = ref pos
+    let wind = ref north
+    let count = ref 0
+    for _ in 1..n do
+        let (x, y) = !pos
+        let prev = grid.[x, y]
+        let next = (prev + 1) % 4
+        grid.[x, y] <- next
+        if next = infected then incr count
+        wind := add !wind turns.[prev]
+        pos := go !pos winds.[!wind]
+    !count
+
 let test_input= [| "..#"; "#.."; "..." |]
 
 let challenge_input =
@@ -213,6 +256,7 @@ let main argv =
         "part2", challenge_input, (12, 12), 10_000_000
     |]
 
+(*
     fun () ->
         for label, input, pos, n in part2s do
             part2_immutable (read2_immutable input) pos n |> printfn "%-8s : %d" label
@@ -228,5 +272,12 @@ let main argv =
             let pos = (x + 1000, y + 1000)
             part2_2darray (read2_2darray input) pos n |> printfn "%-8s : %d" label
     |> timed "Part 2 - 2D array"
+*)
+
+    fun () ->
+        for label, input, (x, y), n in part2s do
+            let pos = (x + 1000, y + 1000)
+            part2_2dints (read2_2dints input) pos n |> printfn "%-8s : %d" label
+    |> timed "Part 2 - 2D integers"
 
     0 // return an integer exit code
